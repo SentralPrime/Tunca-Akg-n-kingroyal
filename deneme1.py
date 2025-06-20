@@ -8,6 +8,8 @@ import time
 import random
 import os
 import sys
+import tempfile
+import uuid
 from datetime import datetime
 
 # Railway ortamı için logging
@@ -73,6 +75,13 @@ class BahisButtonClicker:
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--disable-plugins")
         chrome_options.add_argument("--disable-images")
+        
+        # User data directory conflict'ini çöz - unique directory
+        import tempfile
+        import uuid
+        temp_dir = tempfile.mkdtemp()
+        unique_user_data = os.path.join(temp_dir, f"chrome_user_data_{uuid.uuid4().hex[:8]}")
+        chrome_options.add_argument(f"--user-data-dir={unique_user_data}")
         
         # Railway için kritik ayarlar - JavaScript'i tekrar aktif edelim
         chrome_options.add_argument("--disable-web-security")

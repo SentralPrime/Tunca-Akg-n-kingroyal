@@ -1,7 +1,7 @@
 # Render.com için minimal çalışan Dockerfile
 FROM python:3.11-slim-bullseye
 
-# Root olarak devam et
+# Root olarak sistem kurulumları yap
 USER root
 
 # Update sources ve temel bağımlılıkları yükle
@@ -45,15 +45,32 @@ RUN CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | sed 's/\.[^.]*
     echo "ChromeDriver version:" && \
     chromedriver --version
 
-# Çalışma dizini
+# Non-root user oluştur
+RUN useradd --create-home --shell /bin/bash --user-group --uid 1001 appuser
+
+# Çalışma dizini oluştur ve sahipliği ayarla
 WORKDIR /app
+RUN chown -R appuser:appuser /app
 
-# Python requirements yükle
+# Non-root user'a geç (pip warning'ini önlemek için)
+USER appuser
+
+# Python requirements yükle (artık root değil)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --user --no-cache-dir -r requirements.txt
 
-# Uygulama dosyalarını kopyala
+# PATH'e user site-packages ekle
+ENV PATH="/home/appuser/.local/bin:${PATH}"
+
+# Root'a geç (app dosyalarını kopyalamak için)
+USER root
+
+# Uygulama dosyalarını kopyala ve sahipliği ayarla
 COPY . .
+RUN chown -R appuser:appuser /app
+
+# Final olarak non-root user'a geç
+USER appuser
 
 # Render environment variables
 ENV RENDER_ENVIRONMENT=true
