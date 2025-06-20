@@ -17,7 +17,7 @@ app.config['SECRET_KEY'] = 'your-secret-key-here'
 PORT = int(os.environ.get('PORT', 10000))
 
 # SocketIO konfigürasyonu - CORS ayarları
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Global değişkenler
 bot_instance = None
