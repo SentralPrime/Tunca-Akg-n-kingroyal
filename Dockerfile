@@ -1,7 +1,7 @@
-# Render.com için optimize edilmiş Dockerfile
+# Render.com için minimal çalışan Dockerfile
 FROM python:3.11-slim-bullseye
 
-# Root olarak kalan işlemleri yap
+# Root olarak devam et
 USER root
 
 # Update sources ve temel bağımlılıkları yükle
@@ -17,23 +17,31 @@ RUN apt-get update --fix-missing && apt-get install -y \
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
 
-# Chrome ve minimal dependencies yükle
+# Chrome ve working dependencies yükle (libindicator7 kaldırıldı)
 RUN apt-get update && apt-get install -y \
     google-chrome-stable \
     libnss3 \
-    libgconf-2-4 \
     libxss1 \
-    libappindicator1 \
-    libindicator7 \
+    libgconf-2-4 \
+    libxtst6 \
+    libxrandr2 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libatk1.0-0 \
+    libcairo-gobject2 \
+    libgtk-3-0 \
+    libgdk-pixbuf2.0-0 \
     xvfb \
     && rm -rf /var/lib/apt/lists/*
 
-# ChromeDriver yükle - Render için sabit versiyon
-RUN wget -O /tmp/chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/130.0.6723.69/linux64/chromedriver-linux64.zip" \
-    && unzip /tmp/chromedriver.zip -d /tmp/ \
-    && mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver \
-    && chmod +x /usr/local/bin/chromedriver \
-    && rm -rf /tmp/chromedriver.zip /tmp/chromedriver-linux64
+# ChromeDriver yükle - working version
+RUN CHROMEDRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE` && \
+    wget -N http://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip && \
+    unzip chromedriver_linux64.zip && \
+    rm chromedriver_linux64.zip && \
+    mv chromedriver /usr/local/bin/chromedriver && \
+    chown root:root /usr/local/bin/chromedriver && \
+    chmod 0755 /usr/local/bin/chromedriver
 
 # Çalışma dizini
 WORKDIR /app
@@ -52,7 +60,7 @@ ENV CHROME_BIN=/usr/bin/google-chrome
 ENV CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 ENV PORT=10000
 
-# Port expose et (Render için 10000)
+# Port expose et
 EXPOSE 10000
 
 # Uygulama başlat
