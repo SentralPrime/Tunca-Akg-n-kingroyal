@@ -62,35 +62,54 @@ class BahisButtonClicker:
         }
         
     def setup_driver(self):
-        """Chrome WebDriver'ı kurulum - Railway optimized"""
+        """Chrome WebDriver'ı kurulum - Railway memory optimized"""
         chrome_options = Options()
         
-        # Railway için temel ayarlar
-        chrome_options.add_argument("--headless=new")  # Yeni headless mode
+        # Railway için agresif memory ayarları
+        chrome_options.add_argument("--headless=new")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--disable-plugins")
         chrome_options.add_argument("--disable-images")
-        chrome_options.add_argument("--disable-javascript")
+        
+        # Railway için kritik ayarlar - JavaScript'i tekrar aktif edelim
         chrome_options.add_argument("--disable-web-security")
         chrome_options.add_argument("--disable-features=VizDisplayCompositor")
-        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("--window-size=1280,720")  # Daha küçük pencere
         chrome_options.add_argument("--single-process")
         chrome_options.add_argument("--disable-software-rasterizer")
         chrome_options.add_argument("--remote-debugging-port=9222")
         chrome_options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36")
         
-        # Railway için ek güvenlik ayarları
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        # Memory optimization - Railway için kritik
+        chrome_options.add_argument("--memory-pressure-off")
         chrome_options.add_argument("--disable-background-timer-throttling")
         chrome_options.add_argument("--disable-backgrounding-occluded-windows")
         chrome_options.add_argument("--disable-renderer-backgrounding")
-        chrome_options.add_argument("--disable-features=TranslateUI")
+        chrome_options.add_argument("--disable-features=TranslateUI,BlinkGenPropertyTrees")
         chrome_options.add_argument("--disable-default-apps")
         chrome_options.add_argument("--no-first-run")
         chrome_options.add_argument("--no-default-browser-check")
+        chrome_options.add_argument("--disable-logging")
+        chrome_options.add_argument("--disable-gpu-logging")
+        chrome_options.add_argument("--silent")
+        
+        # Shared memory ayarları
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-extensions")
+        chrome_options.add_argument("--disable-plugins")
+        chrome_options.add_argument("--disable-background-networking")
+        chrome_options.add_argument("--disable-sync")
+        chrome_options.add_argument("--disable-translate")
+        chrome_options.add_argument("--hide-scrollbars")
+        chrome_options.add_argument("--mute-audio")
+        
+        # Process ayarları
+        chrome_options.add_argument("--max_old_space_size=2048")
+        chrome_options.add_argument("--renderer-process-limit=1")
+        chrome_options.add_argument("--max-active-webgl-contexts=1")
         
         # Chrome binary path'i belirt
         chrome_binary_locations = [
@@ -108,37 +127,53 @@ class BahisButtonClicker:
         
         # Railway ortamı tespiti
         if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PORT'):
-            log_with_timestamp("🚂 Railway ortamı tespit edildi - Optimize edilmiş ayarlar kullanılıyor")
+            log_with_timestamp("🚂 Railway ortamı tespit edildi - Memory optimized ayarlar")
+            # Daha aggressive memory limits
             chrome_options.add_argument("--memory-pressure-off")
-            chrome_options.add_argument("--max_old_space_size=4096")
+            chrome_options.add_argument("--max_old_space_size=1024")
+            chrome_options.add_argument("--optimize-for-size")
         
-        log_with_timestamp("🔧 Chrome Headless mode aktif")
+        log_with_timestamp("🔧 Chrome Memory Optimized mode aktif")
         
         try:
             # ChromeDriver service ayarları
-            chrome_binary_locations = [
+            chromedriver_paths = [
                 "/usr/local/bin/chromedriver",
                 "/usr/bin/chromedriver",
                 os.environ.get('CHROMEDRIVER_PATH', '/usr/local/bin/chromedriver')
             ]
             
             chromedriver_path = None
-            for path in chrome_binary_locations:
+            for path in chromedriver_paths:
                 if os.path.exists(path):
                     chromedriver_path = path
                     log_with_timestamp(f"🔧 ChromeDriver bulundu: {path}")
                     break
             
             if chromedriver_path:
-                service = Service(chromedriver_path)
+                # Service ayarları - timeout artırıldı
+                service = Service(
+                    chromedriver_path,
+                    service_args=['--verbose', '--whitelisted-ips=']
+                )
                 self.driver = webdriver.Chrome(service=service, options=chrome_options)
             else:
-                # Sistem PATH'den ChromeDriver'ı bul
                 log_with_timestamp("🚀 Sistem ChromeDriver kullanılıyor...")
                 self.driver = webdriver.Chrome(options=chrome_options)
-                
-            self.driver.set_window_size(1920, 1080)
-            log_with_timestamp("✅ Chrome WebDriver başlatıldı (Railway Optimized)")
+            
+            # Daha küçük pencere boyutu
+            self.driver.set_window_size(1280, 720)
+            
+            # Connection timeout ayarları
+            self.driver.implicitly_wait(30)
+            self.driver.set_page_load_timeout(60)
+            
+            log_with_timestamp("✅ Chrome WebDriver başlatıldı (Railway Memory Optimized)")
+            
+            # Test connection
+            log_with_timestamp("🔍 Chrome connection test...")
+            self.driver.execute_script("return navigator.userAgent")
+            log_with_timestamp("✅ Chrome connection OK!")
             
         except Exception as e:
             log_with_timestamp(f"❌ Chrome WebDriver başlatılırken hata: {str(e)}")
@@ -147,7 +182,30 @@ class BahisButtonClicker:
             log_with_timestamp(f"   - CHROME_BIN: {os.environ.get('CHROME_BIN', 'Tanımlı değil')}")
             log_with_timestamp(f"   - CHROMEDRIVER_PATH: {os.environ.get('CHROMEDRIVER_PATH', 'Tanımlı değil')}")
             log_with_timestamp(f"   - RAILWAY_ENVIRONMENT: {os.environ.get('RAILWAY_ENVIRONMENT', 'Tanımlı değil')}")
-            raise
+            
+            # Retry mechanism - bir kez daha dene
+            log_with_timestamp("🔄 Tekrar deneniyor...")
+            try:
+                # Daha minimal ayarlarla dene
+                minimal_options = Options()
+                minimal_options.add_argument("--headless=new")
+                minimal_options.add_argument("--no-sandbox")
+                minimal_options.add_argument("--disable-dev-shm-usage")
+                minimal_options.add_argument("--single-process")
+                minimal_options.add_argument("--window-size=800,600")
+                
+                if chromedriver_path:
+                    service = Service(chromedriver_path)
+                    self.driver = webdriver.Chrome(service=service, options=minimal_options)
+                else:
+                    self.driver = webdriver.Chrome(options=minimal_options)
+                
+                self.driver.set_window_size(800, 600)
+                log_with_timestamp("✅ Chrome WebDriver başlatıldı (Minimal Mode)")
+                
+            except Exception as retry_error:
+                log_with_timestamp(f"❌ Retry de başarısız: {str(retry_error)}")
+                raise
         
     def load_page(self):
         """Sayfayı yükle"""
