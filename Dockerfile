@@ -34,14 +34,16 @@ RUN apt-get update && apt-get install -y \
     xvfb \
     && rm -rf /var/lib/apt/lists/*
 
-# ChromeDriver yükle - working version
-RUN CHROMEDRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE` && \
-    wget -N http://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip && \
-    unzip chromedriver_linux64.zip && \
-    rm chromedriver_linux64.zip && \
-    mv chromedriver /usr/local/bin/chromedriver && \
-    chown root:root /usr/local/bin/chromedriver && \
-    chmod 0755 /usr/local/bin/chromedriver
+# ChromeDriver yükle - Chrome 137 ile uyumlu versiyon
+RUN CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | sed 's/\.[^.]*$//') && \
+    echo "Chrome version detected: $CHROME_VERSION" && \
+    wget -O /tmp/chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/137.0.7151.119/linux64/chromedriver-linux64.zip" && \
+    unzip /tmp/chromedriver.zip -d /tmp/ && \
+    mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver && \
+    chmod +x /usr/local/bin/chromedriver && \
+    rm -rf /tmp/chromedriver.zip /tmp/chromedriver-linux64 && \
+    echo "ChromeDriver version:" && \
+    chromedriver --version
 
 # Çalışma dizini
 WORKDIR /app
