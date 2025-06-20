@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 import time
 import random
 import os
@@ -61,43 +62,91 @@ class BahisButtonClicker:
         }
         
     def setup_driver(self):
-        """Chrome WebDriver'ı kurulum - Headless mode ile"""
+        """Chrome WebDriver'ı kurulum - Railway optimized"""
         chrome_options = Options()
         
-        # Her durumda headless mode
-        chrome_options.add_argument("--headless")
-        log_with_timestamp("🔧 Chrome Headless mode aktif")
-        
+        # Railway için temel ayarlar
+        chrome_options.add_argument("--headless=new")  # Yeni headless mode
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-web-security")
-        chrome_options.add_argument("--disable-features=VizDisplayCompositor")
-        chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.add_argument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36")
-        
-        # Stability için ek ayarlar
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--disable-plugins")
         chrome_options.add_argument("--disable-images")
+        chrome_options.add_argument("--disable-javascript")
+        chrome_options.add_argument("--disable-web-security")
+        chrome_options.add_argument("--disable-features=VizDisplayCompositor")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("--single-process")
+        chrome_options.add_argument("--disable-software-rasterizer")
+        chrome_options.add_argument("--remote-debugging-port=9222")
+        chrome_options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36")
         
-        # Railway ortamı için ek ayarlar
-        if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RENDER_ENVIRONMENT') or os.environ.get('PORT'):
-            chrome_options.add_argument("--disable-javascript")
-            chrome_options.add_argument("--single-process")
-            chrome_options.add_argument("--disable-gpu")
-            chrome_options.add_argument("--disable-software-rasterizer")
-            chrome_options.add_argument("--remote-debugging-port=9222")
-            log_with_timestamp("🚂 Cloud ortamı tespit edildi - Optimize edilmiş ayarlar kullanılıyor")
+        # Railway için ek güvenlik ayarları
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_argument("--disable-background-timer-throttling")
+        chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+        chrome_options.add_argument("--disable-renderer-backgrounding")
+        chrome_options.add_argument("--disable-features=TranslateUI")
+        chrome_options.add_argument("--disable-default-apps")
+        chrome_options.add_argument("--no-first-run")
+        chrome_options.add_argument("--no-default-browser-check")
+        
+        # Chrome binary path'i belirt
+        chrome_binary_locations = [
+            "/usr/bin/google-chrome",
+            "/usr/bin/google-chrome-stable", 
+            "/usr/bin/chromium-browser",
+            "/usr/bin/chromium"
+        ]
+        
+        for binary_path in chrome_binary_locations:
+            if os.path.exists(binary_path):
+                chrome_options.binary_location = binary_path
+                log_with_timestamp(f"🔧 Chrome binary bulundu: {binary_path}")
+                break
+        
+        # Railway ortamı tespiti
+        if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PORT'):
+            log_with_timestamp("🚂 Railway ortamı tespit edildi - Optimize edilmiş ayarlar kullanılıyor")
+            chrome_options.add_argument("--memory-pressure-off")
+            chrome_options.add_argument("--max_old_space_size=4096")
+        
+        log_with_timestamp("🔧 Chrome Headless mode aktif")
         
         try:
-            # Sistem ChromeDriver kullan (Dockerfile'da yüklü)
-            log_with_timestamp("🚀 Sistem ChromeDriver başlatılıyor...")
-            self.driver = webdriver.Chrome(options=chrome_options)
+            # ChromeDriver service ayarları
+            chrome_binary_locations = [
+                "/usr/local/bin/chromedriver",
+                "/usr/bin/chromedriver",
+                os.environ.get('CHROMEDRIVER_PATH', '/usr/local/bin/chromedriver')
+            ]
+            
+            chromedriver_path = None
+            for path in chrome_binary_locations:
+                if os.path.exists(path):
+                    chromedriver_path = path
+                    log_with_timestamp(f"🔧 ChromeDriver bulundu: {path}")
+                    break
+            
+            if chromedriver_path:
+                service = Service(chromedriver_path)
+                self.driver = webdriver.Chrome(service=service, options=chrome_options)
+            else:
+                # Sistem PATH'den ChromeDriver'ı bul
+                log_with_timestamp("🚀 Sistem ChromeDriver kullanılıyor...")
+                self.driver = webdriver.Chrome(options=chrome_options)
+                
             self.driver.set_window_size(1920, 1080)
-            log_with_timestamp("✅ Chrome WebDriver başlatıldı (Headless Mode)")
+            log_with_timestamp("✅ Chrome WebDriver başlatıldı (Railway Optimized)")
+            
         except Exception as e:
             log_with_timestamp(f"❌ Chrome WebDriver başlatılırken hata: {str(e)}")
+            # Hata durumunda debug bilgileri
+            log_with_timestamp("🔍 Debug bilgileri:")
+            log_with_timestamp(f"   - CHROME_BIN: {os.environ.get('CHROME_BIN', 'Tanımlı değil')}")
+            log_with_timestamp(f"   - CHROMEDRIVER_PATH: {os.environ.get('CHROMEDRIVER_PATH', 'Tanımlı değil')}")
+            log_with_timestamp(f"   - RAILWAY_ENVIRONMENT: {os.environ.get('RAILWAY_ENVIRONMENT', 'Tanımlı değil')}")
             raise
         
     def load_page(self):
