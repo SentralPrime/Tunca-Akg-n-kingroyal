@@ -1,84 +1,61 @@
-# Railway Memory Optimized Dockerfile
-FROM python:3.11-slim
+# Railway için minimal ve güvenilir Dockerfile
+FROM python:3.11-slim-bullseye
 
-# Sistem kullanıcısı oluştur
-RUN useradd --create-home --shell /bin/bash app
+# Root olarak kalan işlemleri yap
+USER root
 
-# Railway için shared memory artır
-RUN echo 'kernel.shmmax = 134217728' >> /etc/sysctl.conf
-
-# Sistem bağımlılıklarını yükle - minimal set
-RUN apt-get update && apt-get install -y \
+# Update sources ve temel bağımlılıkları yükle
+RUN apt-get update --fix-missing && apt-get install -y \
     wget \
-    gnupg2 \
-    unzip \
     curl \
+    unzip \
+    gnupg \
     ca-certificates \
-    fonts-liberation \
-    libappindicator3-1 \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libdrm2 \
-    libgtk-3-0 \
-    libnspr4 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Google Chrome signing key ve repository ekle
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
+
+# Chrome ve minimal dependencies yükle
+RUN apt-get update && apt-get install -y \
+    google-chrome-stable \
     libnss3 \
+    libgconf-2-4 \
     libxss1 \
-    libxtst6 \
-    libgbm1 \
-    xdg-utils \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    libappindicator1 \
+    libindicator7 \
+    xvfb \
+    && rm -rf /var/lib/apt/lists/*
 
-# Google Chrome repository ve key ekle  
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
-    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
+# ChromeDriver yükle
+RUN CHROMEDRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE` && \
+    wget -N http://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip && \
+    unzip chromedriver_linux64.zip && \
+    rm chromedriver_linux64.zip && \
+    mv chromedriver /usr/local/bin/chromedriver && \
+    chown root:root /usr/local/bin/chromedriver && \
+    chmod 0755 /usr/local/bin/chromedriver
 
-# Google Chrome yükle
-RUN apt-get update && apt-get install -y google-chrome-stable && rm -rf /var/lib/apt/lists/*
-
-# ChromeDriver'ı yükle - sabit versiyon
-RUN wget -O /tmp/chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/137.0.7151.119/linux64/chromedriver-linux64.zip" \
-    && unzip /tmp/chromedriver.zip -d /tmp/ \
-    && mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/ \
-    && chmod +x /usr/local/bin/chromedriver \
-    && rm -rf /tmp/chromedriver.zip /tmp/chromedriver-linux64
-
-# Çalışma dizini oluştur
+# Çalışma dizini
 WORKDIR /app
 
-# Sahipliği değiştir
-RUN chown -R app:app /app
-
-# Python bağımlılıklarını kopyala ve yükle
+# Python requirements yükle
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Uygulama dosyalarını kopyala
 COPY . .
 
-# Railway ortam değişkenlerini ayarla
+# Railway environment variables
 ENV RAILWAY_ENVIRONMENT=production
 ENV DISPLAY=:99
-ENV PORT=8080
 ENV CHROME_BIN=/usr/bin/google-chrome
-ENV CHROME_PATH=/usr/bin/google-chrome
 ENV CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
+ENV PORT=8080
 
-# Railway memory ayarları
-ENV MALLOC_ARENA_MAX=2
-ENV MALLOC_MMAP_THRESHOLD_=131072
-ENV MALLOC_TRIM_THRESHOLD_=131072
-ENV MALLOC_TOP_PAD_=131072
-ENV MALLOC_MMAP_MAX_=65536
-
-# Port ayarla
+# Port expose et
 EXPOSE 8080
 
-# Shared memory mount point oluştur
-RUN mkdir -p /dev/shm && chmod 1777 /dev/shm
-
-# app kullanıcısına geç
-USER app
-
-# Flask uygulamasını başlat
+# Uygulama başlat
 CMD ["python", "app.py"] 
