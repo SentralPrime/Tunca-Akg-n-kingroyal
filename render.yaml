@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: python-bot-site
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: RENDER_ENVIRONMENT
+        value: "true"
+      - key: PORT
+        value: "10000"
+      - key: DISPLAY
+        value: ":99" 
