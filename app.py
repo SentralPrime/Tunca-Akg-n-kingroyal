@@ -25,7 +25,7 @@ bot_thread = None
 bot_running = False
 round_count = 0
 terminal_output = []
-account_owner = "Bot Kullanıcısı"
+account_owner = "Tunca Akgün"
 
 def emit_terminal_output(timestamp, message):
     """Terminal çıktısını WebSocket ile gönder"""

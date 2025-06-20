@@ -24,7 +24,7 @@ random_min = 1
 class BahisButtonClicker:
     def __init__(self):
         self.driver = None
-        self.url = "https://mighty.hub.xpressgaming.net/Launcher?token=WqhFpcrRBEGSVXhCn0hNvax15BprwBJe&game=10159&backurl=https%3A%2F%2Fkingroyal619.com&mode=1&language=tr&group=master&clientPlatform=desktop&cashierurl=https%3A%2F%2Fkingroyal619.com&h=9bb45cf2e93b6ce9e1d6573eb1a11eeb"
+        self.url = "https://mighty.hub.xpressgaming.net/Launcher?token=kerFejSb71pofJRcMwNnz0OSpu4mlEGU&game=10159&backurl=https%3A%2F%2Fkingroyal619.com&mode=1&language=tr&group=master&clientPlatform=desktop&cashierurl=https%3A%2F%2Fkingroyal619.com&h=e9abbf9a87f6d06462f80ce10af52b7c"
         self.session_active = False
         
         # 503 numaralı buton bilgileri (TEK butonu)
