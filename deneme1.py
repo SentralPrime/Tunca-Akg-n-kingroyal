@@ -25,6 +25,7 @@ class BahisButtonClicker:
     def __init__(self):
         self.driver = None
         self.url = "https://mighty.hub.xpressgaming.net/Launcher?token=WqhFpcrRBEGSVXhCn0hNvax15BprwBJe&game=10159&backurl=https%3A%2F%2Fkingroyal619.com&mode=1&language=tr&group=master&clientPlatform=desktop&cashierurl=https%3A%2F%2Fkingroyal619.com&h=9bb45cf2e93b6ce9e1d6573eb1a11eeb"
+        self.session_active = False
         
         # 503 numaralı buton bilgileri (TEK butonu)
         self.tek_button = {
@@ -83,14 +84,36 @@ class BahisButtonClicker:
         unique_user_data = os.path.join(temp_dir, f"chrome_user_data_{uuid.uuid4().hex[:8]}")
         chrome_options.add_argument(f"--user-data-dir={unique_user_data}")
         
-        # Railway için kritik ayarlar - JavaScript'i tekrar aktif edelim
+        # Chrome stability için kritik ayarlar
         chrome_options.add_argument("--disable-web-security")
         chrome_options.add_argument("--disable-features=VizDisplayCompositor")
-        chrome_options.add_argument("--window-size=1280,720")  # Daha küçük pencere
-        chrome_options.add_argument("--single-process")
+        chrome_options.add_argument("--window-size=1280,720")
         chrome_options.add_argument("--disable-software-rasterizer")
-        chrome_options.add_argument("--remote-debugging-port=9222")
         chrome_options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36")
+        
+        # Chrome session stability için
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_argument("--disable-client-side-phishing-detection")
+        chrome_options.add_argument("--disable-component-extensions-with-background-pages")
+        chrome_options.add_argument("--disable-default-apps")
+        chrome_options.add_argument("--disable-hang-monitor")
+        chrome_options.add_argument("--disable-ipc-flooding-protection")
+        chrome_options.add_argument("--disable-popup-blocking")
+        chrome_options.add_argument("--disable-prompt-on-repost")
+        chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+        chrome_options.add_argument("--disable-renderer-backgrounding")
+        chrome_options.add_argument("--disable-background-timer-throttling")
+        chrome_options.add_argument("--force-fieldtrials=*BackgroundTracing/default/")
+        
+        # DevTools connection stability
+        chrome_options.add_argument("--remote-debugging-port=0")  # Random port
+        chrome_options.add_argument("--enable-automation")
+        chrome_options.add_experimental_option("useAutomationExtension", False)
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        
+        # Process ayarları - tek process yerine daha stable
+        chrome_options.add_argument("--renderer-process-limit=1")
+        chrome_options.add_argument("--max-active-webgl-contexts=1")
         
         # Memory optimization - Railway için kritik
         chrome_options.add_argument("--memory-pressure-off")
@@ -177,12 +200,21 @@ class BahisButtonClicker:
             self.driver.implicitly_wait(30)
             self.driver.set_page_load_timeout(60)
             
-            log_with_timestamp("✅ Chrome WebDriver başlatıldı (Railway Memory Optimized)")
+            log_with_timestamp("✅ Chrome WebDriver başlatıldı (Stability Optimized)")
             
-            # Test connection
-            log_with_timestamp("🔍 Chrome connection test...")
-            self.driver.execute_script("return navigator.userAgent")
-            log_with_timestamp("✅ Chrome connection OK!")
+            # Test connection with retry
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    log_with_timestamp(f"🔍 Chrome connection test (deneme {attempt + 1}/{max_retries})...")
+                    user_agent = self.driver.execute_script("return navigator.userAgent")
+                    log_with_timestamp(f"✅ Chrome connection OK! User Agent: {user_agent[:50]}...")
+                    break
+                except Exception as e:
+                    log_with_timestamp(f"⚠️ Connection test {attempt + 1} başarısız: {str(e)}")
+                    if attempt == max_retries - 1:
+                        raise
+                    time.sleep(2)
             
         except Exception as e:
             log_with_timestamp(f"❌ Chrome WebDriver başlatılırken hata: {str(e)}")
@@ -215,6 +247,33 @@ class BahisButtonClicker:
             except Exception as retry_error:
                 log_with_timestamp(f"❌ Retry de başarısız: {str(retry_error)}")
                 raise
+    
+    def is_session_active(self):
+        """Chrome session'ının aktif olup olmadığını kontrol et"""
+        try:
+            if not self.driver:
+                return False
+            # Basit bir JavaScript komutu çalıştırarak session'ı test et
+            self.driver.execute_script("return document.readyState")
+            self.session_active = True
+            return True
+        except Exception as e:
+            log_with_timestamp(f"⚠️ Session kontrolü başarısız: {str(e)}")
+            self.session_active = False
+            return False
+    
+    def restart_session_if_needed(self):
+        """Gerekirse session'ı yeniden başlat"""
+        if not self.is_session_active():
+            log_with_timestamp("🔄 Session aktif değil, yeniden başlatılıyor...")
+            try:
+                if self.driver:
+                    self.driver.quit()
+            except:
+                pass
+            self.setup_driver()
+            self.load_page()
+            log_with_timestamp("✅ Session yeniden başlatıldı!")
         
     def load_page(self):
         """Sayfayı yükle"""

@@ -88,6 +88,11 @@ def run_bot():
             try:
                 custom_log_with_timestamp(f"🎯 ROUND {round_count} başlıyor...")
                 
+                # Session aktif mi kontrol et
+                if not bot_instance.is_session_active():
+                    custom_log_with_timestamp("⚠️ Chrome session aktif değil, yeniden başlatılıyor...")
+                    bot_instance.restart_session_if_needed()
+                
                 # Frame'e geç
                 bot_instance.switch_to_game_frame()
                 
