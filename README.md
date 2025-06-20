@@ -21,10 +21,11 @@ Bu proje, casino oyunlarında otomatik bahis yapan bir Python bot uygulamasıdı
 ## 📦 Render Deployment
 
 ### Otomatik Deployment:
-1. GitHub repository'yi Render'a bağla
-2. "New Web Service" seç
-3. Docker runtime seç
-4. Deploy butonuna bas
+1. [render.com](https://render.com) hesap aç
+2. GitHub repository'yi bağla
+3. "New Web Service" seç
+4. Docker runtime seç
+5. Deploy butonuna bas
 
 ### Manuel Deployment:
 ```bash
@@ -59,4 +60,11 @@ render deploy
 
 - `/status` - Bot durumu API
 - `/logs` - Log çıktıları API
-- WebSocket events - Real-time updates 
+- WebSocket events - Real-time updates
+
+## 🎯 Render Özel Notlar
+
+- **Free Tier**: 750 saat/ay ücretsiz
+- **Auto Sleep**: 15 dakika inaktiflik sonrası uyku modu
+- **Memory**: 512MB RAM limit
+- **Build Time**: ~5-10 dakika 

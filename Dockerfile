@@ -1,4 +1,4 @@
-# Railway için minimal ve güvenilir Dockerfile
+# Render.com için optimize edilmiş Dockerfile
 FROM python:3.11-slim-bullseye
 
 # Root olarak kalan işlemleri yap
@@ -28,14 +28,12 @@ RUN apt-get update && apt-get install -y \
     xvfb \
     && rm -rf /var/lib/apt/lists/*
 
-# ChromeDriver yükle
-RUN CHROMEDRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE` && \
-    wget -N http://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip && \
-    unzip chromedriver_linux64.zip && \
-    rm chromedriver_linux64.zip && \
-    mv chromedriver /usr/local/bin/chromedriver && \
-    chown root:root /usr/local/bin/chromedriver && \
-    chmod 0755 /usr/local/bin/chromedriver
+# ChromeDriver yükle - Render için sabit versiyon
+RUN wget -O /tmp/chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/130.0.6723.69/linux64/chromedriver-linux64.zip" \
+    && unzip /tmp/chromedriver.zip -d /tmp/ \
+    && mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver \
+    && chmod +x /usr/local/bin/chromedriver \
+    && rm -rf /tmp/chromedriver.zip /tmp/chromedriver-linux64
 
 # Çalışma dizini
 WORKDIR /app
@@ -47,15 +45,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Uygulama dosyalarını kopyala
 COPY . .
 
-# Railway environment variables
-ENV RAILWAY_ENVIRONMENT=production
+# Render environment variables
+ENV RENDER_ENVIRONMENT=true
 ENV DISPLAY=:99
 ENV CHROME_BIN=/usr/bin/google-chrome
 ENV CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
-ENV PORT=8080
+ENV PORT=10000
 
-# Port expose et
-EXPOSE 8080
+# Port expose et (Render için 10000)
+EXPOSE 10000
 
 # Uygulama başlat
 CMD ["python", "app.py"] 

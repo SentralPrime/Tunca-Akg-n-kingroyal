@@ -13,8 +13,8 @@ from deneme1 import BahisButtonClicker
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 
-# Railway için port ayarı
-PORT = int(os.environ.get('PORT', 8080))
+# Render için port ayarı
+PORT = int(os.environ.get('PORT', 10000))
 
 # SocketIO konfigürasyonu - CORS ayarları
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
@@ -276,9 +276,9 @@ def handle_connect():
         emit('terminal_output', output)
 
 if __name__ == '__main__':
-    # Railway için PORT environment variable kullan
-    port = int(os.environ.get('PORT', 8080))
-    debug_mode = not os.environ.get('RAILWAY_ENVIRONMENT', False)
+    # Render için PORT environment variable kullan
+    port = int(os.environ.get('PORT', 10000))
+    debug_mode = not os.environ.get('RENDER_ENVIRONMENT', False)
     
     socketio.run(app, 
                 debug=debug_mode, 

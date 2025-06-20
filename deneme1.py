@@ -125,9 +125,9 @@ class BahisButtonClicker:
                 log_with_timestamp(f"🔧 Chrome binary bulundu: {binary_path}")
                 break
         
-        # Railway ortamı tespiti
-        if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PORT'):
-            log_with_timestamp("🚂 Railway ortamı tespit edildi - Memory optimized ayarlar")
+        # Render ortamı tespiti
+        if os.environ.get('RENDER_ENVIRONMENT') or os.environ.get('PORT'):
+            log_with_timestamp("🎨 Render ortamı tespit edildi - Memory optimized ayarlar")
             # Daha aggressive memory limits
             chrome_options.add_argument("--memory-pressure-off")
             chrome_options.add_argument("--max_old_space_size=1024")
@@ -181,7 +181,7 @@ class BahisButtonClicker:
             log_with_timestamp("🔍 Debug bilgileri:")
             log_with_timestamp(f"   - CHROME_BIN: {os.environ.get('CHROME_BIN', 'Tanımlı değil')}")
             log_with_timestamp(f"   - CHROMEDRIVER_PATH: {os.environ.get('CHROMEDRIVER_PATH', 'Tanımlı değil')}")
-            log_with_timestamp(f"   - RAILWAY_ENVIRONMENT: {os.environ.get('RAILWAY_ENVIRONMENT', 'Tanımlı değil')}")
+            log_with_timestamp(f"   - RENDER_ENVIRONMENT: {os.environ.get('RENDER_ENVIRONMENT', 'Tanımlı değil')}")
             
             # Retry mechanism - bir kez daha dene
             log_with_timestamp("🔄 Tekrar deneniyor...")
